@@ -36,8 +36,8 @@ train:
   
 data:
   sampling_rate: 16000
-  audio_samples_folder: "/Users/mattiapavese/Freelance/Planet/asr-correction/AR_fusion_correction/cv-corpus-19.0-2024-09-13/it/clips"
+  audio_samples_folder: "./cv-corpus-19.0-2024-09-13/it/clips"
 
 utils:
-  models_cache_dir: "/Users/mattiapavese/Freelance/Planet/asr-correction/AR_fusion_correction/model"
+  models_cache_dir: "./model"
 

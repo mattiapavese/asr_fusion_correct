@@ -1,10 +1,13 @@
+#!/bin/bash
 apt update -y && apt upgrade -y
 
-python3.11 -m venv venv
-venv/bin/pip install transformers datasets librosa pydub python-box torch protobuf sentencepiece
+python3.11 -m pip install transformers datasets librosa pydub python-box protobuf sentencepiece
 
 #if you want to run also prepare_dataset.py, you need polars
-#venv/bin/pip install polars
+#python3.11 -m install polars
+
+#if not running on runpod with pyTorch already installed, install torch
+#python3.11 -m install torch
 
 apt install -y ffmpeg
 
