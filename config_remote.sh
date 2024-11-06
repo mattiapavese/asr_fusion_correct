@@ -9,5 +9,7 @@ venv/bin/pip install transformers datasets librosa pydub python-box torch protob
 apt install -y ffmpeg
 
 # to push on remote, remember to set up github access token with 
-# GITHUB_ACCESS_TOKEN=<your_token>
+#  export GITHUB_ACCESS_TOKEN=<your_token>
+# and eventually 
+#  git remote set-url origin https://$GITHUB_ACCESS_TOKEN@github.com/mattiapavese/asr_fusion_correct.git
 
