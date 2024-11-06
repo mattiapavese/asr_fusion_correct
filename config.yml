@@ -27,9 +27,9 @@ model:
     mt5_ckpt: "google/mt5-large"
 
 train:
-  device: "cpu"
+  device: "cuda"
   num_epochs: 3
-  batch_size: 2
+  batch_size: 16
   
   optimizer: 
     lr: 0.0001

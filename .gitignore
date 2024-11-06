@@ -4,5 +4,6 @@ model*
 noisy_clips_test
 dataset.tsv
 construct_tsv_dataset.logs
+venv
 
 phonemes_graph.cpp
