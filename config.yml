@@ -1,0 +1,43 @@
+model:
+  using: "base" # select one among base or large
+                # or eventual new variants,
+                # whose details should be specified here below
+
+  # here model variants details;
+  # notice that some parameters (embed_dim, num_layers)
+  # are constriained to the tts and llm models used
+  base:
+    embed_dim: 768
+    num_layers: 12
+    num_heads: 8
+    ffw_dim: 3072
+    dict_dim_latent_attention: 512
+    dropout: 0.1
+    whisper_ckpt: "openai/whisper-small"
+    mt5_ckpt: "google/mt5-base"
+
+  large:
+    embed_dim: 1024
+    num_layers: 24
+    num_heads: 16
+    ffw_dim: 4096
+    dict_dim_latent_attention: 768
+    dropout: 0.1
+    whisper_ckpt: "openai/whisper-medium"
+    mt5_ckpt: "google/mt5-large"
+
+train:
+  device: "cpu"
+  num_epochs: 3
+  batch_size: 2
+  
+  optimizer: 
+    lr: 0.0001
+  
+data:
+  sampling_rate: 16000
+  audio_samples_folder: "/Users/mattiapavese/Freelance/Planet/asr-correction/AR_fusion_correction/cv-corpus-19.0-2024-09-13/it/clips"
+
+utils:
+  models_cache_dir: "/Users/mattiapavese/Freelance/Planet/asr-correction/AR_fusion_correction/model"
+

@@ -1,0 +1,15 @@
+rearrange dataset.py to get stuffs from config
+fix load_mulitple_audio_files in prepare_dataset.py (get rid of concurrency)
+add tokenizer and audio processor configurations to config.yml
+create processors.py to istantiate tokenizer and audio_processor
+
+push on github and load on runpod machine (+ load dataset)
+
+for training:
+    validation set 
+    write train and validation loss to csv remote
+    create board that pulls results from remote and updates real time plot
+
+OBS: maybe get separate values for classifier and language model heads
+
+

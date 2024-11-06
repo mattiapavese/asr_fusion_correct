@@ -1,0 +1,8 @@
+__pycache__
+cv-corpus*
+model*
+noisy_clips_test
+dataset.tsv
+construct_tsv_dataset.logs
+
+phonemes_graph.cpp
