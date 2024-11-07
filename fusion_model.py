@@ -4,6 +4,7 @@ from transformers.models.t5.tokenization_t5_fast import T5TokenizerFast
 from torch.nn import MultiheadAttention, LayerNorm, Linear, Sequential
 from transformers.modeling_outputs import Seq2SeqLMOutput
 from config import config
+import warnings
 
 from transformers.modeling_outputs import BaseModelOutput
 import torch
@@ -223,100 +224,6 @@ def get_model():
         ffw_dim_latent_attention=model_config.ffw_dim
     )
 
-    ar_fusion_model.to(config.train.device)
+    ar_fusion_model.to(device=config.train.device)
 
     return ar_fusion_model
-
-
-
-
-
-        
-
-        
-
-
-
-
-
-
-        
-
-        
-        
-
-
-
-        
-
-        
-
-        
-
-        
-
-        
-        
-            
-'''
-whisper:WhisperModel=WhisperModel\
-    .from_pretrained("openai/whisper-small", cache_dir=cache_dir)
-audio_encoder=whisper.encoder
-audio_processor=WhisperProcessor\
-    .from_pretrained("openai/whisper-small", cache_dir=cache_dir)
-
-mt5:MT5ForConditionalGeneration=MT5ForConditionalGeneration\
-    .from_pretrained("google/mt5-base", cache_dir=cache_dir)
-text_encoder=mt5.encoder
-text_tokenizer:T5TokenizerFast=MT5TokenizerFast\
-    .from_pretrained("google/mt5-base", cache_dir=cache_dir)
-
-EMBED_DIM=768 #this comes from text encoder dimension
-NUM_LAYERS=12#this comes from text/audio encoder number of transformer layers
-
-fusion=FusionTransformer(NUM_LAYERS, EMBED_DIM)
-
-#data pipe
-audio,sr=librosa.load("demo.mp3",sr=16000) #audio input
-audio_input_features=audio_processor(audio,sampling_rate=sr,return_tensors="pt")["input_features"]
-
-encoded_audio:BaseModelOutput=audio_encoder(audio_input_features, output_hidden_states=True)
-
-text="La carriera di Kid appare, a questo punto. In declino,"
-text_inputs=text_tokenizer(text, return_tensors="pt", add_special_tokens=False)
-encoded_text:BaseModelOutput=text_encoder(**text_inputs, output_hidden_states=True)
-
-text_hidden_states=encoded_text.hidden_states
-print("text encoder layers:", len(text_hidden_states)-1, "shape:", text_hidden_states[1].shape)
-
-audio_hidden_states=encoded_audio.hidden_states
-print("audio encoder layers:", len(audio_hidden_states)-1, "shape:", audio_hidden_states[1].shape)
-
-fused=fusion(text_hidden_states[1:], audio_hidden_states[1:], audio_hidden_states[1:]) #(B, T_text, EMBED_DIM)
-
-label_text="La carriera di Kid appare, a questo punto, in declino."
-text_labels=text_tokenizer(label_text, return_tensors="pt", add_special_tokens=False)
-
-latent_attention=LatentAttentionPooling(EMBED_DIM, 512)
-classifier=Sequential(
-    torch.nn.Linear(EMBED_DIM,int(EMBED_DIM/2)),
-    torch.nn.ReLU(),
-    torch.nn.Dropout(0.1),
-    torch.nn.Linear(int(EMBED_DIM/2),int(EMBED_DIM/4)),
-    torch.nn.ReLU(),
-    torch.nn.Dropout(0.1),
-    torch.nn.Linear(int(EMBED_DIM/4), 1)
-)
-latent_pool=latent_attention(fused[-1])
-logit=classifier(latent_pool)
-
-class_target=torch.tensor([[1.]])
-
-loss_fn=torch.nn.BCEWithLogitsLoss()
-classifier_loss=loss_fn(logit, class_target)
-
-print(classifier_loss)
-
-decoder_out:Seq2SeqLMOutput=mt5(encoder_outputs=(text_hidden_states[0],)+fused, labels=text_labels["input_ids"])
-print(decoder_out.loss)
-'''

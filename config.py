@@ -33,9 +33,12 @@ class _OptimizerConfig:
     lr: float   = _config.train.optimizer.lr
 
 class _TrainConfig:
-    device:     str = _config.train.device
-    num_epochs: int = _config.train.num_epochs
-    batch_size: int = _config.train.batch_size
+    device:         str = _config.train.device
+    num_epochs:     int = _config.train.num_epochs
+    batch_size:     int = _config.train.batch_size
+    logging_steps:  int = _config.train.logging_steps
+    valid_split:    int = _config.train.valid_split
+    exp_name:       str = _config.train.exp_name
     optimizer       = _OptimizerConfig()
 
 class _UtilsConfig:

@@ -63,13 +63,24 @@ class DataLoaderWrapper:
     """
     pass
 
-def get_dataloaders()->DataLoader: #TODO should return tuple of DataLoaderWrapper
+def get_dataloaders()->tuple[DataLoader]: #TODO should return tuple of DataLoaderWrapper
+    
+    train_val_split=_dataset["train"].train_test_split(test_size=config.train.valid_split)
+
     with_audio_train_dataloader=DataLoader(
-        _dataset["train"], 
+        train_val_split["train"], 
         batch_size=config.train.batch_size, 
         collate_fn=with_audio_collate_fn, 
         shuffle=True)
-    return with_audio_train_dataloader
+    
+    with_audio_val_dataloader=DataLoader(
+        train_val_split["test"], 
+        batch_size=config.train.batch_size, 
+        collate_fn=with_audio_collate_fn, 
+        shuffle=True
+    )
+    
+    return with_audio_train_dataloader, with_audio_val_dataloader
 
 
 

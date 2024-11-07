@@ -29,7 +29,10 @@ model:
 train:
   device: "cuda"
   num_epochs: 3
-  batch_size: 16
+  batch_size: 4
+  logging_steps: 200
+  valid_split: 0.1
+  exp_name: "test_01"
   
   optimizer: 
     lr: 0.0001

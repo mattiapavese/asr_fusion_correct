@@ -5,5 +5,6 @@ noisy_clips_test
 dataset.tsv
 construct_tsv_dataset.logs
 venv
+train_logs
 
 phonemes_graph.cpp

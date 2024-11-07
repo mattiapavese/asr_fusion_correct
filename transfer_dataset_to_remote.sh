@@ -1,8 +1,8 @@
 #!/bin/bash
 #to be used from local machine to remote to transfer dataset files
-$remote_user="root"
-$remote_ip="194.68.245.79" #replace with ip of machine where to transfer
-$remote_path="/workspace/asr_fusion_correct/"
+remote_user="root"
+remote_ip="194.68.245.79" #replace with ip of machine where to transfer
+remote_path="/workspace/asr_fusion_correct/"
 
 scp -i ~/.ssh/id_ed25519 ./dataset.tsv  $remote_user@$remote_ip:$remote_path
 
