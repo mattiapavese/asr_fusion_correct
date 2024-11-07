@@ -64,7 +64,7 @@ for epoch in range(config.train.num_epochs):
 
                 total_val_loss += val_loss.item()
             
-            avg_train_loss = total_train_loss / len(train_dataloader)
+            avg_train_loss = total_train_loss / logging_steps
             avg_val_loss = total_val_loss / len(val_dataloader)
 
             
