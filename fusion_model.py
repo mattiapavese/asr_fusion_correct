@@ -25,7 +25,9 @@ class FusionLayer(torch.nn.Module):
     def __init__(self, embed_dim, num_heads, dropout, ffw_dim ) -> None:
         super().__init__()
 
-        self._cross_attention=MultiheadAttention(embed_dim, num_heads, dropout, batch_first=True)
+        #self._cross_attention=MultiheadAttention(embed_dim, num_heads, dropout, batch_first=True)
+        self._mixing_mha=MultiheadAttention(embed_dim, num_heads, dropout, batch_first=True)
+        self._fusion_mha=MultiheadAttention(embed_dim, num_heads, dropout, batch_first=True)
         self._layernorm=LayerNorm(embed_dim)
         self._ffw=Sequential(
             Linear(embed_dim, ffw_dim), 
@@ -33,27 +35,40 @@ class FusionLayer(torch.nn.Module):
             torch.nn.Dropout(dropout),
             Linear(ffw_dim, embed_dim))
 
-    def forward(self, q, k, v):
-        # query q comes from text encoder
-        # key k and value v come from audio encoder
-        x=self._cross_attention(q,k,v)[0]
-        x=x+q
+    def forward(self, x, text_emb, audio_emb): #x stands for previous fusion layer out, or dictionary
+        x=self._mixing_mha(text_emb,x,x)[0] + text_emb
         x=self._layernorm(x)
 
-        x_=self._ffw(x)
-        x=x+x_
+        x=x+self._fusion_mha(x, audio_emb, audio_emb)[0]
+        x=self._layernorm(x)
+
+        x=x+self._ffw(x)
         return self._layernorm(x)
     
 #choose num_heads between 8, 12, 16, 24
-class FusionTransformer(torch.nn.Module):
+class FusionStack(torch.nn.Module):
     def __init__(self, num_layers, embed_dim, num_heads=8, dropout=.1, ffw_dim=3072)->None:
         super().__init__()
+
+        self._dictionary=torch.nn.Parameter(torch.Tensor(embed_dim, embed_dim))
+        torch.nn.init.xavier_normal_(self._dictionary)
+
         self._layers = torch.nn.ModuleList(
             [FusionLayer(embed_dim, num_heads, dropout, ffw_dim) for _ in range(num_layers)]
         )
 
-    def forward(self, qs, ks, vs):
-        return tuple([l(q,k,v) for (l,q,k,v) in zip(self._layers, qs, ks, vs)])
+    def forward(self, text_embeddings:tuple[torch.Tensor], audio_embeddings:tuple[torch.Tensor]):
+        if text_embeddings[0].ndim==3:
+            x=torch.stack([self._dictionary] * text_embeddings[0].size(0), dim=0)
+        else:
+            x=self._dictionary
+        
+        result=[]
+        for l,t,a in zip(self._layers, text_embeddings, audio_embeddings):
+            x=l(x, t, a)
+            result.append(x)
+        
+        return tuple(result)
 
 class LatentAttentionPooling(torch.nn.Module):
     def __init__(self, embed_dim, latents_dim, num_heads=8, dropout=.1, ffw_dim=3072)->None:
@@ -97,7 +112,7 @@ class ARFusionCorrect(torch.nn.Module):
         self._audio_encoder=tts_model.encoder
         self._language_model=language_model
         
-        self._fusion=FusionTransformer(
+        self._fusion=FusionStack(
             num_layers_fusion, 
             embed_dim_fusion, 
             num_heads_fusion,
@@ -122,12 +137,19 @@ class ARFusionCorrect(torch.nn.Module):
         )
 
         self._classifier_loss_fn=torch.nn.BCEWithLogitsLoss()
-        self._loss:torch.Tensor|None=None
-    
+
+        self._classifier_loss:torch.Tensor|None=None
+        self._lm_loss:torch.Tensor|None=None
     
     @property
     def loss(self):
-        return self._loss
+        return self._classifier_loss + self._lm_loss
+    @property
+    def classifier_loss(self):
+        return self._classifier_loss
+    @property
+    def lm_loss(self):
+        return self._lm_loss
 
     def forward(self, 
             text_input_ids:torch.Tensor,
@@ -166,8 +188,9 @@ class ARFusionCorrect(torch.nn.Module):
             # and correspective for audio 
             # TODO check in audio i do not need to grab [0:-1] actually , i am not super sure 🚨🚨🚨🚨
             fused=self._fusion(
-                text_embeddings[1:], audio_embeddings[1:], audio_embeddings[1:])
-            fused=(text_embeddings[0],)+fused
+                text_embeddings[1:], audio_embeddings[1:])  # TODO i could add 1 more layer in fusion
+                                                            # and also fuse embeddings? ...
+            fused=(text_embeddings[0],)+fused               # ... if so i would delete this line
         else:
             fused=text_embeddings
 
@@ -176,12 +199,12 @@ class ARFusionCorrect(torch.nn.Module):
       
         decoder_out:Seq2SeqLMOutput
         if compute_loss:
-            classifier_loss=self._classifier_loss_fn(logit, classifier_labels)
+            self._classifier_loss=self._classifier_loss_fn(logit, classifier_labels)
 
             decoder_out=self._language_model(encoder_outputs=fused, labels=text_labels)
             lm_loss=decoder_out.loss
 
-            self._loss=lm_loss+classifier_loss
+            self._lm_loss=lm_loss
         else:
             raise NotImplementedError(("I still don't know how to do this :) "
                                        "Probably need to exploit `generate` function, "
