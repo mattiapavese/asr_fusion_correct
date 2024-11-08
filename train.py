@@ -56,8 +56,9 @@ for epoch in range(config.train.num_epochs):
     
         if step%logging_steps==0:
             #perform validation and logging
+            model.eval()
             total_val_loss=0
-
+            
             for _, batch in enumerate(val_dataloader):
                 model(**batch)
                 val_loss=model.loss

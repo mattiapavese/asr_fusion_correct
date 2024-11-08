@@ -42,7 +42,11 @@ class _TrainConfig:
     optimizer       = _OptimizerConfig()
 
 class _UtilsConfig:
-    models_cache_dir: str   = _config.utils.models_cache_dir
+    models_cache_dir:       str = _config.utils.models_cache_dir
+    remote_machine_ip:      str = _config.utils.remote_machine_ip
+    remote_machine_user:    str = _config.utils.remote_machine_user
+    remote_machine_port:    str = _config.utils.remote_machine_port
+    remote_machine_workdir: str = _config.utils.remote_machine_workdir
 
 class _DataConfig:
     sampling_rate:          int = _config.data.sampling_rate

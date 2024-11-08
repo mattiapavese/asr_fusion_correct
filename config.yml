@@ -27,12 +27,12 @@ model:
     mt5_ckpt: "google/mt5-large"
 
 train:
-  device: "cuda"
+  device: "cpu"
   num_epochs: 3
-  batch_size: 4
-  logging_steps: 200
+  batch_size: 2
+  logging_steps: 10
   valid_split: 0.1
-  exp_name: "test_01"
+  exp_name: "test_100"
   
   optimizer: 
     lr: 0.0001
@@ -43,4 +43,8 @@ data:
 
 utils:
   models_cache_dir: "./model"
+  remote_machine_ip: "66.114.112.70" 
+  remote_machine_user: "root"
+  remote_machine_port: 17127
+  remote_machine_workdir: "/workspace/asr_fusion_correct"
 
