@@ -32,6 +32,13 @@ class _ModelConfig:
 class _OptimizerConfig:
     lr: float   = _config.train.optimizer.lr
 
+class _LoraConfig():
+    r:                              int         = _config.train.lora.r
+    alpha:                          int         = _config.train.lora.alpha
+    dropout:                        float       = _config.train.lora.dropout
+    target_modules_audio_encoder:   list[str]   = _config.train.lora.target_modules_audio_encoder
+    target_modules_lm:              list[str]   = _config.train.lora.target_modules_lm
+
 class _TrainConfig:
     device:         str = _config.train.device
     num_epochs:     int = _config.train.num_epochs
@@ -40,6 +47,7 @@ class _TrainConfig:
     valid_split:    int = _config.train.valid_split
     exp_name:       str = _config.train.exp_name
     optimizer       = _OptimizerConfig()
+    lora            = _LoraConfig()
 
 class _UtilsConfig:
     models_cache_dir:       str = _config.utils.models_cache_dir

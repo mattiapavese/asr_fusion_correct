@@ -1,5 +1,5 @@
 #build train loop
-from fusion_model import get_model
+from model import get_model_for_generalized_train
 import torch
 from dataset import get_dataloaders
 from config import config
@@ -26,7 +26,7 @@ with open(train_logs_path,"w") as f:
 shutil.copy("config.yml", os.path.join(exp_logs_dir, "config.yml"))
 
 
-model=get_model()
+model=get_model_for_generalized_train()
 
 train_dataloader, val_dataloader=get_dataloaders()
 

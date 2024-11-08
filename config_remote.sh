@@ -1,7 +1,7 @@
 #!/bin/bash
 apt update -y && apt upgrade -y
 
-python3.11 -m pip install transformers datasets librosa pydub python-box protobuf sentencepiece
+python3.11 -m pip install transformers datasets librosa pydub python-box protobuf sentencepiece peft
 
 #if you want to run also prepare_dataset.py, you need polars
 #python3.11 -m install polars

@@ -1,10 +1,11 @@
-from transformers import WhisperModel, WhisperProcessor
+from transformers import WhisperForAudioClassification, PreTrainedModel
+from transformers.models.whisper.modeling_whisper import WhisperEncoder
 from transformers import MT5ForConditionalGeneration, MT5TokenizerFast
 from transformers.models.t5.tokenization_t5_fast import T5TokenizerFast
 from torch.nn import MultiheadAttention, LayerNorm, Linear, Sequential
 from transformers.modeling_outputs import Seq2SeqLMOutput
 from config import config
-import warnings
+from peft import LoraConfig, get_peft_model
 
 from transformers.modeling_outputs import BaseModelOutput
 import torch
@@ -97,8 +98,8 @@ class LatentAttentionPooling(torch.nn.Module):
 
 class ARFusionCorrect(torch.nn.Module):
     def __init__(self, 
-            tts_model:WhisperModel, 
-            language_model:MT5ForConditionalGeneration,
+            audio_encoder,
+            language_model,
             embed_dim_fusion:int, #this has to change according to base/large
             num_layers_fusion:int, #this has to change according to base/large
             num_heads_fusion:int=8,
@@ -109,7 +110,7 @@ class ARFusionCorrect(torch.nn.Module):
             ffw_dim_latent_attention:int=3072)->None:
         super().__init__()
         
-        self._audio_encoder=tts_model.encoder
+        self._audio_encoder= audio_encoder
         self._language_model=language_model
         
         self._fusion=FusionStack(
@@ -127,10 +128,7 @@ class ARFusionCorrect(torch.nn.Module):
             ffw_dim_latent_attention)
         
         self._classifier=Sequential(
-            torch.nn.Linear(embed_dim_fusion,int(embed_dim_fusion/2)),
-            torch.nn.ReLU(),
-            torch.nn.Dropout(0.1),
-            torch.nn.Linear(int(embed_dim_fusion/2),int(embed_dim_fusion/4)),
+            torch.nn.Linear(embed_dim_fusion,int(embed_dim_fusion/4)),
             torch.nn.ReLU(),
             torch.nn.Dropout(0.1),
             torch.nn.Linear(int(embed_dim_fusion/4), 1)
@@ -187,10 +185,8 @@ class ARFusionCorrect(torch.nn.Module):
             # oss we slice embeddings because the first dimension is output of word embedding
             # and correspective for audio 
             # TODO check in audio i do not need to grab [0:-1] actually , i am not super sure 🚨🚨🚨🚨
-            fused=self._fusion(
-                text_embeddings[1:], audio_embeddings[1:])  # TODO i could add 1 more layer in fusion
-                                                            # and also fuse embeddings? ...
-            fused=(text_embeddings[0],)+fused               # ... if so i would delete this line
+            fused=self._fusion(text_embeddings[1:], audio_embeddings[1:])                                       
+            fused=(text_embeddings[0],)+fused          
         else:
             fused=text_embeddings
 
@@ -214,7 +210,7 @@ class ARFusionCorrect(torch.nn.Module):
         return None #still need to understand what to return
 
         
-def get_model():
+def get_model_for_generalized_train():
 
     #TODO i don't like this should be automatic
     if config.model.using=="base":
@@ -223,20 +219,34 @@ def get_model():
         model_config=config.model.large
     else:
         raise NotImplementedError("no model config found")
+    
+    lora_config_audio_enc= LoraConfig(
+        r=config.train.lora.r,
+        lora_alpha=config.train.lora.alpha,
+        target_modules=config.train.lora.target_modules_audio_encoder,
+        lora_dropout=config.train.lora.dropout
+    )
+    lora_config_lm= LoraConfig(
+        r=config.train.lora.r,
+        lora_alpha=config.train.lora.alpha,
+        target_modules=config.train.lora.target_modules_lm,
+        lora_dropout=config.train.lora.dropout
+    )
 
-    tts_model=WhisperModel.from_pretrained(
-        model_config.whisper_ckpt, cache_dir=config.utils.models_cache_dir)
+    audio_encoder:WhisperEncoder
+    audio_encoder=WhisperForAudioClassification.from_pretrained(
+        model_config.whisper_ckpt, cache_dir=config.utils.models_cache_dir).encoder
+    audio_encoder_lora=get_peft_model(audio_encoder, lora_config_audio_enc)
+    audio_encoder_lora.to(config.train.device)
     
-    tts_model.to(config.train.device)
-    
-    language_model=MT5ForConditionalGeneration.from_pretrained(
+    lm_model=MT5ForConditionalGeneration.from_pretrained(
         model_config.mt5_ckpt, cache_dir=config.utils.models_cache_dir)
-    
-    language_model.to(config.train.device)
+    lm_model_lora=get_peft_model(lm_model, lora_config_lm)
+    lm_model_lora.to(config.train.device)
     
     ar_fusion_model=ARFusionCorrect(
-        tts_model, 
-        language_model, 
+        audio_encoder_lora, 
+        lm_model_lora, 
         embed_dim_fusion=model_config.embed_dim,
         num_layers_fusion=model_config.num_layers,
         num_heads_fusion=model_config.num_heads,
