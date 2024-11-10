@@ -48,6 +48,9 @@ data:
   sampling_rate: 16000
   audio_samples_folder: "./cv-corpus-19.0-2024-09-13/it/clips"
 
+  drive:
+    ssh_key_path: "~/.ssh/id_ed25519"
+
 utils:
   models_cache_dir: "./model"
   remote_machine_ip: "157.157.221.29" 

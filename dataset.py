@@ -5,11 +5,68 @@ import os
 import librosa
 from config import config
 from processors import text_tokenizer, audio_processor
+import asyncssh
+import asyncio
+from dotenv import load_dotenv
+
+load_dotenv()
+
+# sensible info, set as env variables
+drive_host=os.environ["DATA_DRIVE_HOST"]
+drive_user=os.environ["DATA_DRIVE_USER"]
+drive_path_prefix=os.environ["DATA_DRIVE_PATH_PREFIX"]
+
+drive_ssh_key_path=config.data.drive.ssh_key_path
+
+try:
+    os.makedirs(config.data.audio_samples_folder, exist_ok=False)
+except OSError:
+    print("Audio clips directory found.")
+    pass
+
+if not os.path.exists(config.data.audio_samples_folder):
+    os.makedirs()
+
+async def fetch_dataset():
+    async with asyncssh.connect(
+            drive_host,
+            username=drive_user,
+            client_keys=[drive_ssh_key_path]
+        ) as conn:
+            remote_tsv_path=os.path.join(drive_path_prefix, "dataset.tsv")
+            await asyncssh.scp((conn, remote_tsv_path), "./dataset.tsv")
+
+asyncio.run( fetch_dataset() )
+            
+
+async def fetch_audio(audio_path:str):
+    async with asyncssh.connect(
+            drive_host,
+            username=drive_user,
+            client_keys=[drive_ssh_key_path]
+        ) as conn:
+            remote_audio_path=os.path.join(drive_path_prefix, audio_path.removeprefix("./"))
+            await asyncssh.scp((conn, remote_audio_path), audio_path)
+    
+
+async def fetch_many_audios(audio_paths:list[str]):
+    await asyncio.gather( *(fetch_audio(path) for path in audio_paths) )
 
 def load_multiple_audios(audio_paths:list[str], sr:int=16000):
     audios=[]
+    to_be_fetched:list[str]=[]
+
     for path in audio_paths:
+        if os.path.exists(path):
+            audios.append( librosa.load(path, sr=sr) )
+        else:
+            to_be_fetched.append( path )
+    
+    asyncio.run( fetch_many_audios(to_be_fetched) )
+
+    for path in to_be_fetched:
         audios.append( librosa.load(path, sr=sr) )
+    
     return audios
 
 _dataset=load_dataset("csv", data_files=["dataset.tsv"], sep="\t")

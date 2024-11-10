@@ -6,5 +6,7 @@ dataset.tsv
 construct_tsv_dataset.logs
 venv
 train_logs
+.env
+backup
 
 phonemes_graph.cpp

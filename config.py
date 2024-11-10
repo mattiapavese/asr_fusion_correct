@@ -56,9 +56,13 @@ class _UtilsConfig:
     remote_machine_port:    str = _config.utils.remote_machine_port
     remote_machine_workdir: str = _config.utils.remote_machine_workdir
 
+class _DriveConfig:
+    ssh_key_path: str = _config.data.drive.ssh_key_path
+
 class _DataConfig:
     sampling_rate:          int = _config.data.sampling_rate
     audio_samples_folder:   str = _config.data.audio_samples_folder
+    drive                       = _DriveConfig()
 
 class _Config:
     model   = _ModelConfig()
