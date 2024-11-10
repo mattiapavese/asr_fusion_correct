@@ -4,6 +4,16 @@ from box import Box
 with open("config.yml","r") as f:
     _config=Box(yaml.safe_load(f))
 
+class _ModelSmallConfig:
+    embed_dim:                  int     = _config.model.small.embed_dim
+    num_layers:                 int     = _config.model.small.num_layers
+    num_heads:                  int     = _config.model.small.num_heads
+    ffw_dim:                    int     = _config.model.small.ffw_dim
+    dict_dim_latent_attention:  int     = _config.model.small.dict_dim_latent_attention
+    dropout:                    float   = _config.model.small.dropout
+    whisper_ckpt:               str     = _config.model.small.whisper_ckpt
+    mt5_ckpt:                   str     = _config.model.small.mt5_ckpt
+
 class _ModelBaseConfig:
     embed_dim:                  int     = _config.model.base.embed_dim
     num_layers:                 int     = _config.model.base.num_layers
@@ -27,6 +37,7 @@ class _ModelLargeConfig:
 class _ModelConfig:
     base        = _ModelBaseConfig()
     large       = _ModelLargeConfig()
+    small       = _ModelSmallConfig()
     using: str  = _config.model.using
 
 class _OptimizerConfig:

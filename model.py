@@ -217,6 +217,8 @@ def get_model_for_generalized_train():
         model_config=config.model.base
     elif config.model.using=="large":
         model_config=config.model.large
+    elif config.model.using=="small":
+        model_config=config.model.small
     else:
         raise NotImplementedError("no model config found")
     

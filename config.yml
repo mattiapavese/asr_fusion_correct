@@ -1,11 +1,21 @@
 model:
-  using: "base" # select one among base or large
+  using: "small" # select one among base or large
                 # or eventual new variants,
                 # whose details should be specified here below
 
   # here model variants details;
   # notice that some parameters (embed_dim, num_layers)
   # are constrained to the audio and text pretrained models used
+  small:
+    embed_dim: 512 #should match embedding dim of lm
+    num_layers: 1
+    num_heads: 4
+    ffw_dim: 1024 #2*embed_dim
+    dict_dim_latent_attention: 256
+    dropout: 0.1
+    whisper_ckpt: "openai/whisper-base"
+    mt5_ckpt: "google/mt5-small"
+
   base:
     embed_dim: 768
     num_layers: 1
@@ -27,19 +37,19 @@ model:
     mt5_ckpt: "google/mt5-large"
 
 train:
-  device: "mps"
+  device: "cuda"
   num_epochs: 3
-  batch_size: 2
-  logging_steps: 10
+  batch_size: 32
+  logging_steps: 100
   valid_split: 0.1
-  exp_name: "test_100"
+  exp_name: "test_04_small"
   
   optimizer: 
     lr: 0.0001
   
   lora:
-    r: 2
-    alpha: 8
+    r: 16
+    alpha: 16
     dropout: 0.1
     target_modules_audio_encoder: ["q_proj","v_proj"]
     target_modules_lm: ["q", "v"]
