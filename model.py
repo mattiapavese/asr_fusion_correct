@@ -37,10 +37,10 @@ class FusionLayer(torch.nn.Module):
             Linear(ffw_dim, embed_dim))
 
     def forward(self, x, text_emb, audio_emb): #x stands for previous fusion layer out, or dictionary
-        x=self._mixing_mha(text_emb,x,x)[0] + text_emb
+        x=self._mixing_mha(text_emb,x,x)[0] #+text_embed
         x=self._layernorm(x)
 
-        x=x+self._fusion_mha(x, audio_emb, audio_emb)[0]
+        x=self._fusion_mha(x, audio_emb, audio_emb)[0]+text_emb
         x=self._layernorm(x)
 
         x=x+self._ffw(x)
@@ -112,6 +112,7 @@ class ARFusionCorrect(torch.nn.Module):
         
         self._audio_encoder= audio_encoder
         self._language_model=language_model
+        self._num_layers=num_layers_fusion
         
         self._fusion=FusionStack(
             num_layers_fusion, 
@@ -183,10 +184,9 @@ class ARFusionCorrect(torch.nn.Module):
         # skip fusion if audio input features are not present
         if audio_input_features is not None:
             # oss we slice embeddings because the first dimension is output of word embedding
-            # and correspective for audio 
-            # TODO check in audio i do not need to grab [0:-1] actually , i am not super sure 🚨🚨🚨🚨
-            fused=self._fusion(text_embeddings[1:], audio_embeddings[1:])                                       
-            fused=(text_embeddings[0],)+fused          
+            # and correspective for audio
+            fused=self._fusion(text_embeddings[-self._num_layers:], audio_embeddings[-self._num_layers:])                                       
+            fused=text_embeddings[:-self._num_layers]+fused          
         else:
             fused=text_embeddings
 

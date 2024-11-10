@@ -8,7 +8,7 @@ model:
   # are constrained to the audio and text pretrained models used
   base:
     embed_dim: 768
-    num_layers: 12
+    num_layers: 1
     num_heads: 8
     ffw_dim: 1536 #2*embed_dim
     dict_dim_latent_attention: 512
@@ -38,7 +38,7 @@ train:
     lr: 0.0001
   
   lora:
-    r: 4
+    r: 2
     alpha: 8
     dropout: 0.1
     target_modules_audio_encoder: ["q_proj","v_proj"]
