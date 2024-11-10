@@ -31,7 +31,8 @@ async def fetch_dataset():
     async with asyncssh.connect(
             drive_host,
             username=drive_user,
-            client_keys=[drive_ssh_key_path]
+            client_keys=[drive_ssh_key_path],
+            known_hosts=None
         ) as conn:
             remote_tsv_path=os.path.join(drive_path_prefix, "dataset.tsv")
             await asyncssh.scp((conn, remote_tsv_path), "./dataset.tsv")
@@ -43,7 +44,9 @@ async def fetch_audio(audio_path:str):
     async with asyncssh.connect(
             drive_host,
             username=drive_user,
-            client_keys=[drive_ssh_key_path]
+            client_keys=[drive_ssh_key_path],
+            known_hosts=None,
+            keepalive_interval=60
         ) as conn:
             remote_audio_path=os.path.join(drive_path_prefix, audio_path.removeprefix("./"))
             await asyncssh.scp((conn, remote_audio_path), audio_path)
@@ -62,8 +65,13 @@ def load_multiple_audios(audio_paths:list[str], sr:int=16000):
         else:
             to_be_fetched.append( path )
     
-    asyncio.run( fetch_many_audios(to_be_fetched) )
-
+    n_coroutines=4
+    count=0
+    while count*n_coroutines<len(to_be_fetched):
+        asyncio.run( fetch_many_audios(
+            to_be_fetched[count*n_coroutines:(count+1)*n_coroutines]) )
+        count+=1
+        
     for path in to_be_fetched:
         audios.append( librosa.load(path, sr=sr) )
     
