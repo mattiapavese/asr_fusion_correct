@@ -6,8 +6,11 @@ import librosa
 from config import config
 from processors import text_tokenizer, audio_processor
 import asyncssh
+from asyncssh.misc import ConnectionLost
 import asyncio
 from dotenv import load_dotenv
+import warnings
+import time
 
 load_dotenv()
 
@@ -41,15 +44,25 @@ asyncio.run( fetch_dataset() )
             
 
 async def fetch_audio(audio_path:str):
-    async with asyncssh.connect(
-            drive_host,
-            username=drive_user,
-            client_keys=[drive_ssh_key_path],
-            known_hosts=None,
-            keepalive_interval=60
-        ) as conn:
-            remote_audio_path=os.path.join(drive_path_prefix, audio_path.removeprefix("./"))
-            await asyncssh.scp((conn, remote_audio_path), audio_path)
+    count_fetch=1
+    while True:
+        if count_fetch>1:
+            warnings.warn(f"Retrying to fetch {audio_path}; attempt #{count_fetch}.")
+        try:
+            async with asyncssh.connect(
+                    drive_host,
+                    username=drive_user,
+                    client_keys=[drive_ssh_key_path],
+                    known_hosts=None,
+                    keepalive_interval=60
+                ) as conn:
+                    remote_audio_path=os.path.join(drive_path_prefix, audio_path.removeprefix("./"))
+                    await asyncssh.scp((conn, remote_audio_path), audio_path)
+
+                    break
+        except ConnectionLost:
+            count_fetch+=1
+
     
 
 async def fetch_many_audios(audio_paths:list[str]):
@@ -65,7 +78,7 @@ def load_multiple_audios(audio_paths:list[str], sr:int=16000):
         else:
             to_be_fetched.append( path )
     
-    n_coroutines=4
+    n_coroutines=2
     count=0
     while count*n_coroutines<len(to_be_fetched):
         asyncio.run( fetch_many_audios(
